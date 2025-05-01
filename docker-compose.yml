@@ -1,0 +1,22 @@
+services:
+  valkey:
+    image: valkey/valkey
+    ports:
+      - 6379:6379
+
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - 6333:6333
+
+  
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    volumes:
+      - data:/data/db
+    ports:
+      - 27017:27017
+
+volumes:
+  data:
