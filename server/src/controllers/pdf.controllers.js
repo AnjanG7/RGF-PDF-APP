@@ -51,14 +51,14 @@ const uploadPdf = asyncHandler(async (req, res) => {
   // Step 3: Extract text from PDF (Cloudinary URL)
   const pdfText = await extractTextFromPDF(pdfFile.secure_url);
 
-  // Step 4: Add job to queue
   await queue.add(
     "file-ready",
     {
       cloudinaryUrl: pdfFile.secure_url,
       publicId: pdfFile.public_id,
       originalFilename: req.file?.originalname,
-      pdftext: pdfText, // <-- now passing extracted text
+      pdftext: pdfText,
+      // <-- now passing extracted text
     },
     {
       attempts: 3,

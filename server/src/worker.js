@@ -74,7 +74,7 @@ const worker = new Worker(
 
 worker.on("completed", (job) => {
   logger.info(
-    `🎉 Job ${job.id} completed successfully---.${JSON.stringify(job.data)}`
+    `🎉 Job ${job.id} completed successfully)}`
   );
 });
 
