@@ -23,20 +23,21 @@ app.use(express.static("uploads"));
 app.use(requestIp.mw());
 
 // Rate limiter to avoid misuse of the service and avoid cost spikes
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Limit each IP to 500 requests per `window` (here, per 15 minutes)
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (req, res) => {
-    return req.clientIp; // IP address from requestIp.mw(), as opposed to req.ip
-  },
-  handler: (_, __, ___, options) => {
+  limit: (req, res) => 500, // replaces deprecated `max`
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.clientIp,
+  handler: (req, res, next, options) => {
     throw new ApiError(
-      options.statusCode || 500,
-      `There are too many requests. You are only allowed ${
-        options.max
-      } requests per ${options.windowMs / 60000} minutes`
+      options.statusCode || 429,
+      `Too many requests. You are allowed ${
+        typeof options.limit === "function"
+          ? options.limit(req, res)
+          : options.limit
+      } requests per ${options.windowMs / 60000} minutes.`
     );
   },
 });

@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
+import fs from "fs/promises";
+import logger from "../logger/wiston.logger.js";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,17 +13,22 @@ const uploadOnCloudinary = async (localFilePath) => {
     if (!localFilePath) return null;
     //upload the file on cloudinary
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: 'raw', // for PDF
-      folder: 'pdf_uploads',
-      
+      resource_type: "raw", // for PDF
+      folder: "pdf_uploads",
     });
     // file has been uploaded successfull
 
-    fs.unlinkSync(localFilePath);
+    await fs.unlink(localFilePath);
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath); // remove the locally saved temporary file as the upload operation got failed
-    return null;
+    try {
+      await fs.unlink(localFilePath);
+    } catch (unlinkErr) {
+      logger.warn("Failed to delete temp file:", unlinkErr.message);
+    }
+
+    // Let the calling code handle the failure properly
+    throw new Error(`Cloudinary upload failed: ${error.message}`);
   }
 };
 

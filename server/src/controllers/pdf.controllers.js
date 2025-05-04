@@ -17,8 +17,19 @@ const queue = new Queue("file-upload-queue", {
 // Helper: extract text from Cloudinary PDF
 async function extractTextFromPDF(url) {
   try {
-    const response = await axios.get(url, { responseType: "arraybuffer" });
-    const data = await pdfParse(response.data);
+    const response = await axios.get(url, {
+      responseType: "stream",
+      timeout: 10000,
+    });
+
+    const chunks = [];
+    for await (const chunk of response.data) {
+      chunks.push(chunk);
+    }
+
+    const buffer = Buffer.concat(chunks);
+    const data = await pdfParse(buffer);
+
     const pages = data.text
       .split("\f")
       .filter((page) => page.trim().length > 0);
@@ -29,6 +40,11 @@ async function extractTextFromPDF(url) {
 }
 
 const uploadPdf = asyncHandler(async (req, res) => {
+  const fileMimeType = req.file?.mimetype;
+  if (!fileMimeType || fileMimeType !== "application/pdf") {
+    throw new ApiError(400, "Invalid file type. Only PDFs are allowed.");
+  }
+
   const localPath = req.file?.path;
   if (!localPath) {
     throw new ApiError(400, "PDF file is missing!", []);
@@ -37,7 +53,7 @@ const uploadPdf = asyncHandler(async (req, res) => {
   // Step 1: Upload to Cloudinary
   const pdfFile = await uploadOnCloudinary(localPath);
   if (!pdfFile) {
-    throw new ApiError(400, "PDF upload failed", []);
+    throw new ApiError(500, "PDF upload failed", []);
   }
 
   // Step 2: Save PDF metadata to DB
@@ -54,11 +70,8 @@ const uploadPdf = asyncHandler(async (req, res) => {
   await queue.add(
     "file-ready",
     {
-      cloudinaryUrl: pdfFile.secure_url,
-      publicId: pdfFile.public_id,
       originalFilename: req.file?.originalname,
-      pdftext: pdfText,
-      // <-- now passing extracted text
+      pdftext: pdfText, // <-- now passing extracted text
     },
     {
       attempts: 3,

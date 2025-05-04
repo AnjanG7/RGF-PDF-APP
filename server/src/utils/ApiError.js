@@ -1,5 +1,3 @@
-import { errorHandler } from "../middlewares/error.middlewares.js";
-
 class ApiError extends Error {
   constructor(
     statusCode,

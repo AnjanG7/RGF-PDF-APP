@@ -97,7 +97,7 @@ const FileUploadComponent: React.FC<DocumentUploadProps> = ({ onUploadSuccess })
         return;
       }
 
-      if (file.size > 15 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         setUploadStatus({
           state: 'error',
           message: 'File size exceeds 15MB limit',
